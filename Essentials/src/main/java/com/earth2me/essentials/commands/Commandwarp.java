@@ -115,7 +115,7 @@ public class Commandwarp extends EssentialsCommand {
             return new ArrayList<>(ess.getWarps().getList());
         } else if (args.length == 2 && (user.isAuthorized("essentials.warp.otherplayers") || user.isAuthorized("essentials.warp.others"))) {
             //TODO: Remove 'otherplayers' permission.
-            return getPlayers(server, user);
+            return getPlayers(user);
         } else {
             return Collections.emptyList();
         }
@@ -126,7 +126,7 @@ public class Commandwarp extends EssentialsCommand {
         if (args.length == 1) {
             return new ArrayList<>(ess.getWarps().getList());
         } else if (args.length == 2) {
-            return getPlayers(server, sender);
+            return getPlayers(sender);
         } else {
             return Collections.emptyList();
         }
