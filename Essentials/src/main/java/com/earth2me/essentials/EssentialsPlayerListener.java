@@ -190,22 +190,7 @@ public class EssentialsPlayerListener implements Listener, Runnable {
         final User user = ess.getUser(event.getPlayer());
         if (user.isMuted()) {
             event.setCancelled(true);
-
-            final String dateDiff = user.getMuteTimeout() > 0 ? DateUtil.formatDateDiff(user.getMuteTimeout()) : null;
-            if (dateDiff == null) {
-                if (user.hasMuteReason()) {
-                    user.sendTl("voiceSilencedReason", user.getMuteReason());
-                } else {
-                    user.sendTl("voiceSilenced");
-                }
-            } else {
-                if (user.hasMuteReason()) {
-                    user.sendTl("voiceSilencedReasonTime", dateDiff, user.getMuteReason());
-                } else {
-                    user.sendTl("voiceSilencedTime", dateDiff);
-                }
-            }
-
+            user.notifyMuted();
             ess.getLogger().info(ess.getAdventureFacet().miniToLegacy(tlLiteral("mutedUserSpeaks", user.getName(), event.getMessage())));
         }
         try {
@@ -421,13 +406,24 @@ public class EssentialsPlayerListener implements Listener, Runnable {
 
         final String lastAccountName = user.getLastAccountName(); // For comparison
         user.setLastAccountName(user.getBase().getName());
+
+        final boolean newUsername = lastAccountName != null && !lastAccountName.equals(user.getBase().getName());
+
+        // A null last account name means EssentialsX has never recorded this player before, i.e. it's their first join.
+        // We rely on EssentialsX's own user data here rather than Player#hasPlayedBefore(), which is unreliable on modern
+        // server platforms that persist player data during the login/configuration phase.
+        // See https://github.com/EssentialsX/Essentials/issues/6466, https://github.com/EssentialsX/Essentials/issues/6464
+        final boolean firstJoin = lastAccountName == null;
+
+        // If the Minecraft account name changed, reset the nickname so the old one doesn't persist
+        if (ess.getSettings().isResetNickOnNameChange() && newUsername && user.getNickname() != null) {
+            user.setNickname(null);
+        }
+
         user.setLastLogin(currentTime);
         user.setDisplayNick();
         updateCompass(user);
         user.setLeavingHidden(false);
-
-        // Check for new username. If they don't want the message, let's just say it's false.
-        final boolean newUsername = ess.getSettings().isCustomNewUsernameMessage() && lastAccountName != null && !lastAccountName.equals(user.getBase().getName());
 
         if (!ess.getVanishedPlayersNew().isEmpty() && !user.isAuthorized("essentials.vanish.see")) {
             for (final String p : ess.getVanishedPlayersNew()) {
@@ -454,7 +450,7 @@ public class EssentialsPlayerListener implements Listener, Runnable {
         } else if (message == null || hideJoinQuitMessages()) {
             effectiveMessage = null;
         } else if (ess.getSettings().isCustomJoinMessage()) {
-            final String msg = (newUsername ? ess.getSettings().getCustomNewUsernameMessage() : ess.getSettings().getCustomJoinMessage())
+            final String msg = (newUsername && ess.getSettings().isCustomNewUsernameMessage() ? ess.getSettings().getCustomNewUsernameMessage() : ess.getSettings().getCustomJoinMessage())
                     .replace("{PLAYER}", user.getDisplayName()).replace("{USERNAME}", user.getName())
                     .replace("{UNIQUE}", NumberFormat.getInstance().format(ess.getUsers().getUserCount()))
                     .replace("{ONLINE}", NumberFormat.getInstance().format(ess.getOnlinePlayers().size()))
@@ -474,7 +470,7 @@ public class EssentialsPlayerListener implements Listener, Runnable {
             joinMessageConsumer.accept(effectiveMessage);
         }
 
-        ess.runTaskAsynchronously(() -> ess.getServer().getPluginManager().callEvent(new AsyncUserDataLoadEvent(user, effectiveMessage)));
+        ess.runTaskAsynchronously(() -> ess.getServer().getPluginManager().callEvent(new AsyncUserDataLoadEvent(user, effectiveMessage, firstJoin)));
 
         if (ess.getSettings().getMotdDelay() >= 0) {
             final int motdDelay = ess.getSettings().getMotdDelay() / 50;
@@ -823,20 +819,7 @@ public class EssentialsPlayerListener implements Listener, Runnable {
         final User user = ess.getUser(player);
         if (user.isMuted() && (ess.getSettings().getMuteCommands().contains(cmd) || ess.getSettings().getMuteCommands().contains("*"))) {
             event.setCancelled(true);
-            final String dateDiff = user.getMuteTimeout() > 0 ? DateUtil.formatDateDiff(user.getMuteTimeout()) : null;
-            if (dateDiff == null) {
-                if (user.hasMuteReason()) {
-                    user.sendTl("voiceSilencedReason", user.getMuteReason());
-                } else {
-                    user.sendTl("voiceSilenced");
-                }
-            } else {
-                if (user.hasMuteReason()) {
-                    user.sendTl("voiceSilencedReasonTime", dateDiff, user.getMuteReason());
-                } else {
-                    user.sendTl("voiceSilencedTime", dateDiff);
-                }
-            }
+            user.notifyMuted();
             ess.getLogger().info(ess.getAdventureFacet().miniToLegacy(tlLiteral("mutedUserSpeaks", player.getName(), event.getMessage())));
             return;
         }

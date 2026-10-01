@@ -57,6 +57,10 @@ nick-blacklist:
 # For example, if "&6Notch" has 7 characters (2 are part of a color code), a length of 5 is used when this option is set to true.
 ignore-colors-in-max-nick-length: false
 
+# When this option is enabled, any nickname set by a player will be reset when their Minecraft account name changes.
+# This prevents old nicknames (including RGB-formatted ones) from persisting after a name change.
+reset-nick-on-name-change: false
+
 # When this option is enabled, display names for hidden players will not be shown. This prevents players from being
 # able to see that they are online while vanished.
 hide-displayname-in-vanish: true
@@ -100,6 +104,10 @@ force-disable-teleport-safety: false
 # If a player is teleporting to an unsafe location in creative, adventure, or god mode, they will not be teleported to a
 # safe location. If you'd like players to be teleported to a safe location all of the time, set this option to true.
 force-safe-teleport-location: false
+
+# When teleporting to an unsafe location, should Essentials consider the world's logical height when finding a safe destination?
+# This prevents safety checks from moving players above the Nether roof unless the requested destination is already above it.
+consider-world-height-for-teleport-safety: true
 
 # Consider water blocks as "safe", therefore allowing players to teleport
 # using commands such as /home or /spawn to a location that is occupied by water blocks.
@@ -1147,6 +1155,70 @@ protect:
       witch: false
       horse: false
       phantom: false
+      zombified_piglin: false
+      mooshroom: false
+      snow_golem: false
+      rabbit: false
+      guardian: false
+      elder_guardian: false
+      endermite: false
+      shulker: false
+      polar_bear: false
+      stray: false
+      husk: false
+      wither_skeleton: false
+      zombie_villager: false
+      skeleton_horse: false
+      zombie_horse: false
+      donkey: false
+      mule: false
+      llama: false
+      evoker: false
+      vex: false
+      vindicator: false
+      illusioner: false
+      parrot: false
+      turtle: false
+      cod: false
+      salmon: false
+      pufferfish: false
+      tropical_fish: false
+      dolphin: false
+      drowned: false
+      cat: false
+      fox: false
+      panda: false
+      pillager: false
+      ravager: false
+      trader_llama: false
+      wandering_trader: false
+      bee: false
+      hoglin: false
+      piglin: false
+      piglin_brute: false
+      strider: false
+      zoglin: false
+      axolotl: false
+      glow_squid: false
+      goat: false
+      allay: false
+      frog: false
+      tadpole: false
+      warden: false
+      camel: false
+      sniffer: false
+      armadillo: false
+      bogged: false
+      breeze: false
+      creaking: false
+      happy_ghast: false
+      copper_golem: false
+      camel_husk: false
+      nautilus: false
+      zombie_nautilus: false
+      parched: false
+      sulfur_cube: false
+      cushion: false
 
   # The maximum height a creeper can explode. -1 allows them to explode everywhere.
   # Set 'creeper-explosion' above to true if you want to disable creeper explosions completely.

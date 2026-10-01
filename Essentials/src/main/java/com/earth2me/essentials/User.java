@@ -612,7 +612,8 @@ public class User extends UserData implements Comparable<User>, IMessageRecipien
         final BigDecimal value = _getMoney();
         final long elapsed = System.nanoTime() - start;
         if (elapsed > ess.getSettings().getEconomyLagWarning()) {
-            ess.getLogger().log(Level.INFO, "Lag Notice - Slow Economy Response - Request took over {0}ms!", elapsed / 1000000.0);
+            ess.getLogger().log(Level.INFO, String.format(Locale.ROOT,
+                    "Lag Notice - Slow Economy Response - Request took over %.3fms!", elapsed / 1_000_000.0));
         }
         return value;
     }
@@ -817,6 +818,24 @@ public class User extends UserData implements Comparable<User>, IMessageRecipien
         return false;
     }
 
+    // Notifies this (muted) user that they have been silenced, including the reason and remaining time if applicable.
+    public void notifyMuted() {
+        final String dateDiff = getMuteTimeout() > 0 ? DateUtil.formatDateDiff(getMuteTimeout()) : null;
+        if (dateDiff == null) {
+            if (hasMuteReason()) {
+                sendTl("voiceSilencedReason", getMuteReason());
+            } else {
+                sendTl("voiceSilenced");
+            }
+        } else {
+            if (hasMuteReason()) {
+                sendTl("voiceSilencedReasonTime", dateDiff, getMuteReason());
+            } else {
+                sendTl("voiceSilencedTime", dateDiff);
+            }
+        }
+    }
+
     @Override
     public long getLastActivityTime() {
         return this.lastActivity;
@@ -882,7 +901,7 @@ public class User extends UserData implements Comparable<User>, IMessageRecipien
 
                 for (final User user : ess.getOnlineUsers()) {
                     if (user.isAuthorized("essentials.kick.notify")) {
-                        user.sendTl("playerKicked", Console.DISPLAY_NAME, getName(), user.playerTl("autoAfkKickReason", kickTime));
+                        user.sendTl("playerKicked", Console.displayName(), getName(), user.playerTl("autoAfkKickReason", kickTime));
                     }
                 }
             } else {
