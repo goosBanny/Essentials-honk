@@ -55,7 +55,7 @@ public class I18n implements net.ess3.api.II18n {
     private final transient Map<Locale, ResourceBundle> loadedBundles = new ConcurrentHashMap<>();
     private final transient List<Locale> loadingBundles = new ArrayList<>();
     private transient ResourceBundle localeBundle;
-    private final transient Map<Locale, Map<String, MessageFormat>> messageFormatCache = new HashMap<>();
+    private final transient Map<Locale, Map<String, MessageFormat>> messageFormatCache = new ConcurrentHashMap<>();
 
     public I18n(final IEssentials ess) {
         this.ess = ess;
@@ -195,7 +195,8 @@ public class I18n implements net.ess3.api.II18n {
     private String format(final Locale locale, final String string, final Object... objects) {
         String format = translate(locale, string);
 
-        MessageFormat messageFormat = messageFormatCache.computeIfAbsent(locale, l -> new HashMap<>()).get(format);
+        final Map<String, MessageFormat> formatMap = messageFormatCache.computeIfAbsent(locale, l -> new ConcurrentHashMap<>());
+        MessageFormat messageFormat = formatMap.get(format);
         if (messageFormat == null) {
             try {
                 messageFormat = new MessageFormat(format);
@@ -204,7 +205,7 @@ public class I18n implements net.ess3.api.II18n {
                 format = format.replaceAll("\\{(\\D*?)}", "\\[$1\\]");
                 messageFormat = new MessageFormat(format);
             }
-            messageFormatCache.get(locale).put(format, messageFormat);
+            formatMap.put(format, messageFormat);
         }
 
         final Object[] processedArgs = mutateArgs(objects, arg -> {
@@ -214,7 +215,9 @@ public class I18n implements net.ess3.api.II18n {
             return ess.getAdventureFacet().legacyToMini(ess.getAdventureFacet().escapeTags(arg.toString()));
         });
 
-        return messageFormat.format(processedArgs).replace(' ', ' '); // replace nbsp with a space
+        synchronized (messageFormat) {
+            return messageFormat.format(processedArgs).replace(' ', ' '); // replace nbsp with a space
+        }
     }
 
     public static Object[] mutateArgs(final Object[] objects, final Function<Object, String> mutator) {
