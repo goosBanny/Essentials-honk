@@ -1,6 +1,6 @@
 package com.earth2me.essentials;
 
-import io.papermc.lib.PaperLib;
+import io.github.rvskele.paperlib.PaperLib;
 import net.ess3.provider.Provider;
 import net.essentialsx.providers.NullableProvider;
 import net.essentialsx.providers.ProviderData;

@@ -5,7 +5,7 @@ import com.earth2me.essentials.config.EssentialsConfiguration;
 import com.earth2me.essentials.config.entities.LazyLocation;
 import com.earth2me.essentials.utils.LocationUtil;
 import com.earth2me.essentials.utils.VersionUtil;
-import io.papermc.lib.PaperLib;
+import io.github.rvskele.paperlib.PaperLib;
 import net.ess3.provider.BiomeKeyProvider;
 import net.ess3.provider.BiomeNameProvider;
 import net.ess3.provider.WorldInfoProvider;

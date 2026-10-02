@@ -53,7 +53,7 @@ import com.earth2me.essentials.utils.VersionUtil;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
-import io.papermc.lib.PaperLib;
+import io.github.rvskele.paperlib.PaperLib;
 import net.ess3.api.Economy;
 import com.earth2me.essentials.config.EssentialsConfiguration;
 import net.ess3.api.IEssentials;
@@ -445,7 +445,7 @@ public class Essentials extends JavaPlugin implements net.ess3.api.IEssentials {
             alternativeCommandsHandler = new AlternativeCommandsHandler(this);
 
             timer = new EssentialsTimer(this);
-            scheduleAsyncRepeatingTask(timer, 1000, 50);
+            scheduleSyncRepeatingTask(timer, 1000, 50);
 
             Economy.setEss(this);
             execTimer.mark("RegHandler");

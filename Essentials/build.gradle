@@ -8,7 +8,7 @@ dependencies {
     }
     compileOnly 'net.luckperms:api:5.3'
 
-    api 'io.papermc:paperlib:1.0.6'
+    api 'io.github.rvskele:PaperLib:2.1.0'
 
     implementation 'org.spongepowered:configurate-yaml:4.2.0'
     implementation 'org.checkerframework:checker-qual:3.49.0'
@@ -46,7 +46,7 @@ tasks.register('versionData', VersionDataTask) {
 
 shadowJar {
     dependencies {
-        include (dependency('io.papermc:paperlib'))
+        include (dependency('io.github.rvskele:PaperLib'))
         include (dependency('org.bstats:bstats-bukkit'))
         include (dependency('org.bstats:bstats-base'))
         include (dependency('org.spongepowered:configurate-yaml'))
@@ -88,7 +88,7 @@ shadowJar {
         include (dependency('io.papermc.adventure:adventure-text-serializer-legacy'))
         include (dependency('io.papermc.adventure:adventure-text-minimessage'))
     }
-    relocate 'io.papermc.lib', 'com.earth2me.essentials.paperlib'
+    relocate 'io.github.rvskele.paperlib', 'com.earth2me.essentials.paperlib'
     relocate 'org.bstats', 'com.earth2me.essentials.libs.bstats'
     relocate 'org.spongepowered.configurate', 'com.earth2me.essentials.libs.configurate'
     relocate 'org.yaml.snakeyaml', 'com.earth2me.essentials.libs.snakeyaml'

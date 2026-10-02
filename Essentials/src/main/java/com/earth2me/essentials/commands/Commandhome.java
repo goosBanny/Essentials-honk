@@ -5,7 +5,7 @@ import com.earth2me.essentials.Trade;
 import com.earth2me.essentials.User;
 import com.earth2me.essentials.adventure.AdventureUtil;
 import com.earth2me.essentials.utils.StringUtil;
-import io.papermc.lib.PaperLib;
+import io.github.rvskele.paperlib.PaperLib;
 import net.ess3.api.TranslatableException;
 import net.ess3.api.events.UserTeleportHomeEvent;
 import org.bukkit.Location;

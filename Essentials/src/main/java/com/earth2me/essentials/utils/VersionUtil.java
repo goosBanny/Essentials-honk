@@ -4,7 +4,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import io.papermc.lib.PaperLib;
+import io.github.rvskele.paperlib.PaperLib;
 import net.ess3.nms.refl.ReflUtil;
 import org.bukkit.Bukkit;
 

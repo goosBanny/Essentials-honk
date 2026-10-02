@@ -10,7 +10,7 @@ import com.earth2me.essentials.textreader.TextInput;
 import com.earth2me.essentials.textreader.TextPager;
 import com.earth2me.essentials.userstorage.ModernUserMap;
 import com.earth2me.essentials.utils.*;
-import io.papermc.lib.PaperLib;
+import io.github.rvskele.paperlib.PaperLib;
 import io.papermc.paper.ban.BanListType;
 import io.papermc.paper.event.connection.configuration.AsyncPlayerConnectionConfigureEvent;
 import io.papermc.paper.event.player.PlayerServerFullCheckEvent;
@@ -222,12 +222,7 @@ public class EssentialsPlayerListener implements Listener, Runnable {
             if (user.isFreeze()) {
                 final Location from = lastPlayerLocations.getOrDefault(player.getUniqueId(), player.getLocation());
                 final Location to = from.clone(); // Ensure the player stays at the same location
-                try {
-                    // Attempt to send the player to a safe destination if needed
-                    PaperLib.teleportAsync(player, LocationUtil.getSafeDestination(ess, to));
-                } catch (final Exception ex) {
-                    PaperLib.teleportAsync(player, to); // If the safe destination fails, teleport them back to the original location
-                }
+                PaperLib.teleportAsync(player, to);
                 return; // Exit early since the player is frozen
             }
 
@@ -235,14 +230,8 @@ public class EssentialsPlayerListener implements Listener, Runnable {
             if (user.isAfk() && ess.getSettings().getFreezeAfkPlayers()) {
                 final Location from = lastPlayerLocations.getOrDefault(player.getUniqueId(), player.getLocation());
                 final Location to = from.clone(); // Reset to original position
-                try {
-                    // Prevent movement if they are not allowed to move while AFK
-                    if (player.getAllowFlight()) {
-                        throw new Exception(); // Allow movement if flying
-                    }
-                    PaperLib.teleportAsync(player, LocationUtil.getSafeDestination(ess, to));
-                } catch (final Exception ex) {
-                    PaperLib.teleportAsync(player, to); // Ensure they stay at the original location if anything fails
+                if (!player.getAllowFlight()) {
+                    PaperLib.teleportAsync(player, to);
                 }
                 return; // Exit early since the player is AFK and frozen
             }
