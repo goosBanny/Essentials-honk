@@ -1149,7 +1149,7 @@ public class User extends UserData implements Comparable<User>, IMessageRecipien
                 return;
             }
 
-            sendComponent(ess.getAdventureFacet().deserializeMiniMessage(translation));
+            ess.getAdventureFacet().send(base, ess.getAdventureFacet().deserializeMiniMessage(translation));
         });
     }
 

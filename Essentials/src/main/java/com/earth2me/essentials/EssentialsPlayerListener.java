@@ -38,6 +38,7 @@ import org.bukkit.command.PluginCommand;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -755,29 +756,27 @@ public class EssentialsPlayerListener implements Listener, Runnable {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onPlayerCommandPreprocess(final PlayerCommandPreprocessEvent event) {
-        TaskUtil.runAsync(() -> {
-            final String cmd = event.getMessage().split(" ")[0].replace("/", "").toLowerCase(Locale.ENGLISH);
-            final int argStartIndex = event.getMessage().indexOf(" ");
-            final String args = argStartIndex == -1 ? "" // No arguments present
-                    : event.getMessage().substring(argStartIndex); // arguments start at argStartIndex; substring from there.
+        final String cmd = event.getMessage().split(" ")[0].replace("/", "").toLowerCase(Locale.ENGLISH);
+        final int argStartIndex = event.getMessage().indexOf(" ");
+        final String args = argStartIndex == -1 ? "" // No arguments present
+                : event.getMessage().substring(argStartIndex); // arguments start at argStartIndex; substring from there.
 
-            // If the plugin command does not exist, check if it is an alias from commands.yml
-            if (ess.getServer().getPluginCommand(cmd) == null) {
-                final Command knownCommand = ess.provider(KnownCommandsProvider.class).getKnownCommands().get(cmd);
-                if (knownCommand instanceof FormattedCommandAlias) {
-                    final FormattedCommandAlias command = (FormattedCommandAlias) knownCommand;
-                    for (String fullCommand : ess.provider(FormattedCommandAliasProvider.class).createCommands(command, event.getPlayer(), args.split(" "))) {
-                        handlePlayerCommandPreprocess(event, fullCommand);
-                    }
-                    return;
+        // If the plugin command does not exist, check if it is an alias from commands.yml
+        if (ess.getServer().getPluginCommand(cmd) == null) {
+            final Command knownCommand = ess.provider(KnownCommandsProvider.class).getKnownCommands().get(cmd);
+            if (knownCommand instanceof FormattedCommandAlias) {
+                final FormattedCommandAlias command = (FormattedCommandAlias) knownCommand;
+                for (String fullCommand : ess.provider(FormattedCommandAliasProvider.class).createCommands(command, event.getPlayer(), args.split(" "))) {
+                    handlePlayerCommandPreprocess(event, fullCommand);
                 }
+                return;
             }
+        }
 
-            // Handle the command given from the event.
-            handlePlayerCommandPreprocess(event, cmd + args);
-        });
+        // Handle the command given from the event.
+        handlePlayerCommandPreprocess(event, cmd + args);
     }
 
     public void handlePlayerCommandPreprocess(final PlayerCommandPreprocessEvent event, final String effectiveCommand) {
@@ -841,35 +840,63 @@ public class EssentialsPlayerListener implements Listener, Runnable {
             final String fullCommand = pluginCommand == null ? effectiveCommand : pluginCommand.getName() + args;
 
             // Used to determine whether a user already has an existing cooldown
-            // If so, no need to check for (and write) new ones.
-            boolean cooldownFound = false;
-
             for (final Entry<Pattern, Long> entry : user.getCommandCooldowns().entrySet()) {
                 // Remove any expired cooldowns
                 if (entry.getValue() <= System.currentTimeMillis()) {
                     user.clearCommandCooldown(entry.getKey());
                     // Don't break in case there are other command cooldowns left to clear.
-                } else if (entry.getKey().matcher(fullCommand).matches()) {
-                    // User's current cooldown hasn't expired, inform and terminate cooldown code.
+                } else if (entry.getKey().matcher(fullCommand).matches() || entry.getKey().matcher(effectiveCommand).matches()) {
+                    // User's current cooldown hasn't expired, inform and terminate command execution immediately
                     final String commandCooldownTime = DateUtil.formatDateDiff(entry.getValue());
                     user.sendTl("commandCooldown", commandCooldownTime);
-                    cooldownFound = true;
                     event.setCancelled(true);
+                    return;
                 }
             }
 
-            if (!cooldownFound) {
-                final Entry<Pattern, Long> cooldownEntry = ess.getSettings().getCommandCooldownEntry(fullCommand);
+            // If it is an Essentials command, DO NOT impose cooldown here!
+            // Essentials.onCommandEssentials will impose cooldown upon successful execution (and only if authorized).
+            if (isEssentialsCommand(cmd, pluginCommand)) {
+                return;
+            }
 
-                if (cooldownEntry != null) {
-                    if (ess.getSettings().isDebug()) {
-                        ess.getLogger().info("Applying " + cooldownEntry.getValue() + "ms cooldown on /" + fullCommand + " for" + user.getName() + ".");
-                    }
-                    final Date expiry = new Date(System.currentTimeMillis() + cooldownEntry.getValue());
-                    user.addCommandCooldown(cooldownEntry.getKey(), expiry, ess.getSettings().isCommandCooldownPersistent(fullCommand));
+            // Non-Essentials command: check permission before imposing cooldown
+            final Command commandToCheck = pluginCommand != null ? pluginCommand : ess.provider(KnownCommandsProvider.class).getKnownCommands().get(cmd);
+            if (commandToCheck != null && !commandToCheck.testPermissionSilent(player)) {
+                return;
+            }
+
+            Entry<Pattern, Long> cooldownEntry = ess.getSettings().getCommandCooldownEntry(fullCommand);
+            String matchedCommand = fullCommand;
+            if (cooldownEntry == null && !effectiveCommand.equals(fullCommand)) {
+                cooldownEntry = ess.getSettings().getCommandCooldownEntry(effectiveCommand);
+                matchedCommand = effectiveCommand;
+            }
+
+            if (cooldownEntry != null) {
+                if (ess.getSettings().isDebug()) {
+                    ess.getLogger().info("Applying " + cooldownEntry.getValue() + "ms cooldown on /" + matchedCommand + " for " + user.getName() + ".");
                 }
+                final Date expiry = new Date(System.currentTimeMillis() + cooldownEntry.getValue());
+                user.addCommandCooldown(cooldownEntry.getKey(), expiry, ess.getSettings().isCommandCooldownPersistent(matchedCommand));
             }
         }
+    }
+
+    private boolean isEssentialsCommand(final String cmd, final PluginCommand pluginCommand) {
+        if (pluginCommand != null && isEssentialsPlugin(pluginCommand.getPlugin())) {
+            return true;
+        }
+        final Command knownCommand = ess.provider(KnownCommandsProvider.class).getKnownCommands().get(cmd);
+        if (knownCommand instanceof org.bukkit.command.PluginIdentifiableCommand && isEssentialsPlugin(((org.bukkit.command.PluginIdentifiableCommand) knownCommand).getPlugin())) {
+            return true;
+        }
+        final String cleanCmd = cmd.startsWith("e") && cmd.length() > 1 ? cmd.substring(1) : cmd;
+        return ess.getCommandMap().containsKey(cmd) || ess.getCommandMap().containsKey(cleanCmd);
+    }
+
+    private boolean isEssentialsPlugin(final Plugin plugin) {
+        return plugin != null && (plugin.equals(ess) || plugin.getDescription().getMain().contains("com.earth2me.essentials") || plugin.getDescription().getMain().contains("net.essentialsx"));
     }
 
     @EventHandler(priority = EventPriority.NORMAL)

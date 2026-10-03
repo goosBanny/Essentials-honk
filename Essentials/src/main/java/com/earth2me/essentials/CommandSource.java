@@ -57,6 +57,10 @@ public class CommandSource {
     }
 
     public void sendComponent(final ComponentHolder component) {
+        if (isPlayer()) {
+            getUser().sendComponent(component);
+            return;
+        }
         ess.getAdventureFacet().send(sender, component);
     }
 
@@ -76,6 +80,10 @@ public class CommandSource {
     }
 
     public void sendMessage(final String message) {
+        if (isPlayer()) {
+            getUser().sendMessage(message);
+            return;
+        }
         if (!message.isEmpty()) {
             sender.sendMessage(message);
         }

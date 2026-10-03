@@ -143,6 +143,7 @@ import org.bukkit.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -869,8 +870,10 @@ public class Essentials extends JavaPlugin implements net.ess3.api.IEssentials {
                 } else {
                     cmd.run(getServer(), user, commandLabel, command, args);
                 }
+                applyCommandCooldown(user, command, commandLabel, args);
                 return true;
             } catch (final NoChargeException | QuietAbortException ex) {
+                applyCommandCooldown(user, command, commandLabel, args);
                 return true;
             } catch (final NotEnoughArgumentsException ex) {
                 if (getSettings().isVerboseCommandUsages() && !cmd.getUsageStrings().isEmpty()) {
@@ -908,7 +911,39 @@ public class Essentials extends JavaPlugin implements net.ess3.api.IEssentials {
         }
     }
 
-    private boolean isEssentialsPlugin(Plugin plugin) {
+    public void applyCommandCooldown(final User user, final Command command, final String commandLabel, final String[] args) {
+        if (user == null || !getSettings().isCommandCooldownsEnabled() || user.isAuthorized("essentials.commandcooldowns.bypass")) {
+            return;
+        }
+        if (command != null && user.isAuthorized("essentials.commandcooldowns.bypass." + command.getName())) {
+            return;
+        }
+
+        final StringBuilder sb = new StringBuilder(command != null ? command.getName() : commandLabel);
+        for (final String arg : args) {
+            sb.append(" ").append(arg);
+        }
+        final String fullCommand = sb.toString();
+
+        Map.Entry<Pattern, Long> cooldownEntry = getSettings().getCommandCooldownEntry(fullCommand);
+        if (cooldownEntry == null && command != null && !commandLabel.equalsIgnoreCase(command.getName())) {
+            final StringBuilder altSb = new StringBuilder(commandLabel);
+            for (final String arg : args) {
+                altSb.append(" ").append(arg);
+            }
+            cooldownEntry = getSettings().getCommandCooldownEntry(altSb.toString());
+        }
+
+        if (cooldownEntry != null) {
+            if (getSettings().isDebug()) {
+                LOGGER.info("Applying " + cooldownEntry.getValue() + "ms cooldown on /" + fullCommand + " for " + user.getName() + ".");
+            }
+            final Date expiry = new Date(System.currentTimeMillis() + cooldownEntry.getValue());
+            user.addCommandCooldown(cooldownEntry.getKey(), expiry, getSettings().isCommandCooldownPersistent(fullCommand));
+        }
+    }
+
+    public boolean isEssentialsPlugin(Plugin plugin) {
         return plugin.getDescription().getMain().contains("com.earth2me.essentials") || plugin.getDescription().getMain().contains("net.essentialsx");
     }
 
